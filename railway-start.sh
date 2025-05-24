@@ -1,137 +1,138 @@
 #!/bin/bash
-set -e # Exit immediately if a command exits with a non-zero status.
+set -e # Exit immediately if a command exits with a non-zero status
 
 echo "=== Railway Start/Deploy Phase Start ==="
 
-# Environment Variables from Railway:
-# TWILIO_ACCOUNT_SID, TWILIO_API_KEY, TWILIO_API_SECRET, TF_ENCRYPTION_KEY
-# ENVIRONMENT (e.g., staging, production)
-# INITIAL_RELEASE (true/false)
-# OVERWRITE_CONFIG (true/false)
-# DEPLOY_TERRAFORM (true/false)
+# Set default values for environment variables
+ENVIRONMENT=${ENVIRONMENT:-production}
+INITIAL_RELEASE=${INITIAL_RELEASE:-false}
+DEPLOY_TERRAFORM=${DEPLOY_TERRAFORM:-false}
+OVERWRITE_CONFIG=${OVERWRITE_CONFIG:-false}
 
-# --- 1. Validate Environment (Optional in Railway, as env vars are set directly) ---
-# If your 'npm run -s validate-environment' script is crucial and doesn't rely on GitHub-specific APIs, you can run it.
-# echo "Running environment validation..."
-# npm run -s validate-environment
+# Debug environment
+echo "=== Environment Variables ==="
+echo "ENVIRONMENT: $ENVIRONMENT"
+echo "INITIAL_RELEASE: $INITIAL_RELEASE"
+echo "DEPLOY_TERRAFORM: $DEPLOY_TERRAFORM"
+echo "OVERWRITE_CONFIG: $OVERWRITE_CONFIG"
 
-# --- 2. Initial Serverless Release (Conditional) ---
-# Mimics 'perform-initial-serverless-release' job
-if [ "$INITIAL_RELEASE" = "true" ] && [ "$DEPLOY_TERRAFORM" = "true" ]; then
-  echo "Performing Initial Serverless Release steps..."
-  # The 'npm run postinstall -- --skip-plugin' was already run in build.
-  # If a different postinstall is needed here, adjust.
-  echo "Deploying Addons (Initial Release)..."
+# --- 1. Deploy Addons ---
+echo "=== Deploying Addons ==="
+if [ -f "package.json" ] && grep -q "deploy-addons" package.json; then
+  echo "Running deploy-addons script..."
   npm run deploy-addons
-  echo "Deploying Main Serverless Functions (Initial Release)..."
+else
+  echo "No deploy-addons script found in package.json, skipping..."
+fi
+
+# --- 2. Deploy Serverless Functions ---
+echo "=== Deploying Serverless Functions ==="
+if [ -d "serverless-functions" ]; then
+  echo "Found serverless-functions directory, deploying..."
   cd serverless-functions
+  npm install --omit=dev --no-package-lock --prefer-offline --no-audit
   npm run deploy
   cd ..
 else
-  echo "Skipping Initial Serverless Release steps."
+  echo "No serverless-functions directory found, skipping..."
 fi
 
-# --- 3. Deploy Terraform (Conditional and Complex) ---
-# Mimics 'deploy-terraform' job which uses './.github/workflows/terraform_deploy.yaml'
-if [ "$DEPLOY_TERRAFORM" = "true" ]; then
-  echo "Attempting Terraform Deployment..."
-  # This is the most complex part to translate directly.
-  # Your terraform_deploy.yaml likely does:
-  # - checkout code
-  # - setup terraform CLI
-  # - terraform init, plan, apply
-  # To replicate, you'd need to:
-  # 1. Ensure Terraform CLI is available in your Railway environment (add to Nixpacks/Dockerfile).
-  # 2. Navigate to your Terraform configuration directory.
-  # 3. Run terraform init, plan, apply, passing necessary variables.
-  # Example (highly simplified, assumes Terraform files are in a 'terraform/' dir):
-  # cd terraform
-  # terraform init
-  # terraform apply -auto-approve \
-  #   -var="twilio_account_sid=$TWILIO_ACCOUNT_SID" \
-  #   -var="twilio_api_key=$TWILIO_API_KEY" \
-  #   # ... other vars ...
-  # cd ..
-  echo "TERRAFORM DEPLOYMENT: Manual implementation required based on terraform_deploy.yaml content."
-  echo "For now, this step is a placeholder. You'll need to script the Terraform CLI commands here."
+# --- 3. Deploy Flex Config ---
+echo "=== Deploying Flex Configuration ==="
+if [ -d "flex-config" ]; then
+  echo "Found flex-config directory, deploying..."
+  cd flex-config
+  npm install --omit=dev --no-package-lock --prefer-offline --no-audit
+  echo "OVERWRITE_CONFIG is set to: $OVERWRITE_CONFIG"
+  npm run deploy
+  cd ..
 else
-  echo "Skipping Terraform Deployment."
+  echo "No flex-config directory found, skipping..."
 fi
 
-# --- 4. Deploy Packages (Addons & Serverless) ---
-# Mimics 'deploy-packages' job. This often runs regardless of initial release.
-echo "Deploying Addons (Main Deployment)..."
-npm run deploy-addons # This script iterates through addons and runs 'npm run deploy' in each
+# --- 4. Deploy and Release Flex Plugin ---
+echo "=== Deploying and Releasing Flex Plugin ==="
+if [ -d "plugin-flex-ts-template-v2" ]; then
+  cd plugin-flex-ts-template-v2
+  
+  # Install dependencies if needed
+  if [ ! -d "node_modules" ]; then
+    echo "Installing plugin dependencies..."
+    npm install --omit=dev --no-package-lock --prefer-offline --no-audit
+  fi
+  
+  # Build the plugin if not already built
+  if [ ! -d "build" ]; then
+    echo "Building plugin..."
+    npm run build
+  fi
+  
+  # Deploy the plugin
+  echo "Deploying plugin..."
+  GIT_COMMIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+  npm run deploy -- --changelog="Deploy from Railway - $GIT_COMMIT_SHA"
+  
+  # Only run release if not in development
+  if [ "$ENVIRONMENT" = "production" ]; then
+    echo "Releasing plugin..."
+    npm run release -- --name="Release $GIT_COMMIT_SHA" --description="Auto-deployed from Railway"
+  else
+    echo "Skipping plugin release in non-production environment"
+  fi
+  
+  cd ..
+else
+  echo "No plugin-flex-ts-template-v2 directory found, skipping..."
+fi
 
-echo "Deploying Main Serverless Functions (Main Deployment)..."
-cd serverless-functions
-npm run deploy # This runs 'npm run deploy' from serverless-functions/package.json
-cd ..
+echo "=== Railway Start/Deploy Phase Complete ==="
 
-# --- 5. Deploy Flex Config ---
-# Mimics 'deploy-flex-config' job
-echo "Deploying Flex Configuration..."
-# The 'deploy-flex-config' job runs 'npm run postinstall -- --packages=flex-config'
-# If this specific postinstall is vital before its deploy, run it:
-# npm run postinstall -- --packages=flex-config
-cd flex-config
-# The OVERWRITE_CONFIG logic from GitHub Actions needs to be passed to this script if it uses it.
-# Assuming 'npm run deploy' in flex-config reads OVERWRITE_CONFIG from env:
-echo "OVERWRITE_CONFIG is set to: $OVERWRITE_CONFIG"
-npm run deploy
-cd ..
-
-# --- 6. Deploy and Release Flex Plugin ---
-# Mimics 'deploy-release-plugin' job
-echo "Deploying and Releasing Flex Plugin..."
-cd plugin-flex-ts-template-v2
-# The plugin's own 'npm run deploy' and 'npm run release' scripts handle its build.
-GIT_COMMIT_SHA=$(git rev-parse --short HEAD || echo "unknown")
-npm run deploy -- --changelog="Deploy from Railway - Commit $GIT_COMMIT_SHA"
-npm run release -- --name="Release from Railway - Commit $GIT_COMMIT_SHA" --description="Release from Railway - Commit $GIT_COMMIT_SHA"
-cd ..
-
-echo "=== Railway Start/Deploy Phase End: All deployments initiated. ==="
-
-# --- 7. Start the Flex UI Server ---
+# --- 5. Start the Flex UI Server ---
 echo "=== Starting Flex UI Server ==="
-cd plugin-flex-ts-template-v2
-
-# Set default port if not provided
-PORT=${PORT:-3000}
-
-# Verify build directory exists
-if [ ! -d "build" ]; then
-  echo "=== ERROR: Build directory not found ==="
-  echo "Current directory: $(pwd)"
-  ls -la
-  exit 1
-fi
-
-echo "=== Installing serve locally..."
-npm install serve@14.2.1 --save-dev --no-package-lock --prefer-offline --no-audit
-
-echo "=== Starting server on port $PORT"
-# Use the local serve binary from node_modules
-./node_modules/.bin/serve -s build -l $PORT &
-SERVER_PID=$!
-
-echo "=== Waiting for server to start..."
-sleep 5
-
-# Check if server started successfully
-if ! ps -p $SERVER_PID > /dev/null; then
-  echo "=== ERROR: Server failed to start ==="
-  exit 1
-fi
-
-echo "=== Server is running on port $PORT ==="
-
-# Monitor server process and exit if it stops
-while true; do
+if [ -d "plugin-flex-ts-template-v2" ]; then
+  cd plugin-flex-ts-template-v2
+  
+  # Set default port if not provided
+  PORT=${PORT:-3000}
+  
+  # Verify build directory exists
+  if [ ! -d "build" ]; then
+    echo "=== ERROR: Build directory not found. Attempting to build... ==="
+    npm run build || { echo "=== Build failed. Exiting. ==="; exit 1; }
+  fi
+  
+  # Install serve if not already installed
+  if [ ! -d "node_modules/serve" ]; then
+    echo "Installing serve..."
+    npm install serve@14.2.1 --save-dev --no-package-lock --prefer-offline --no-audit
+  fi
+  
+  # Start the server
+  echo "=== Starting server on port $PORT ==="
+  ./node_modules/.bin/serve -s build -l $PORT &
+  SERVER_PID=$!
+  
+  # Wait for server to start
+  echo "Waiting for server to start..."
+  sleep 5
+  
+  # Verify server is running
   if ! ps -p $SERVER_PID > /dev/null; then
-    echo "=== ERROR: Server process has stopped ==="
+    echo "=== ERROR: Server failed to start ==="
     exit 1
   fi
-  sleep 10
-done
+  
+  echo "=== Server is running on port $PORT ==="
+  
+  # Keep the container alive
+  while true; do
+    if ! ps -p $SERVER_PID > /dev/null; then
+      echo "=== Server process has stopped ==="
+      exit 1
+    fi
+    sleep 10
+  done
+else
+  echo "=== ERROR: Plugin directory not found. Cannot start server. ==="
+  exit 1
+fi
