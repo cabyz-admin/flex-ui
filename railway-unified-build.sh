@@ -18,7 +18,16 @@ npm install --omit=dev --omit=optional --no-package-lock
 
 echo "DEBUG: FINISHED installing production dependencies."
 
-echo "DEBUG: Listing files in current directory (after npm install):"
+echo "DEBUG: Installing serve package..."
+npm install -g serve
+
+echo "DEBUG: Building Flex plugin..."
+cd plugin-flex-ts-template-v2
+npm install --omit=dev --omit=optional
+npm run build
+cd ..
+
+echo "DEBUG: Listing files in current directory (after build):"
 ls -la
 
 echo "DEBUG: STEP 2: Installing specific devDependencies needed for build/deploy scripts..."

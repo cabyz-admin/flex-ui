@@ -92,5 +92,18 @@ npm run release -- --name="Release from Railway - Commit $GIT_COMMIT_SHA" --desc
 cd ..
 
 echo "=== Railway Start/Deploy Phase End: All deployments initiated. ==="
-# Optional: add 'sleep infinity' at the end if you want the Railway service to remain "running".
-# Otherwise, it will complete and stop, and you re-run by "redeploying" in Railway.
+
+# --- 7. Start the Flex UI Server ---
+echo "Starting Flex UI server..."
+cd plugin-flex-ts-template-v2
+
+# For production, we'll use the --name and --no-browser flags
+# and specify a port that Railway expects (from the PORT environment variable)
+PORT=${PORT:-3000}
+echo "Starting Flex UI on port $PORT..."
+npx serve -s build -l $PORT
+
+# Keep the container running
+echo "Flex UI server is running on port $PORT"
+# This will keep the container alive
+while true; do sleep 1000; done
