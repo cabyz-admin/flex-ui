@@ -1,6 +1,7 @@
 # nixpacks.toml
 
-[providers.node]
+[[providers]]
+name = "node"
 # This specifically overrides the default install command for the Node.js provider.
 # When Nixpacks detects a package-lock.json, its Node.js provider defaults to 'npm ci'.
 # We set installCmd to a harmless echo command to prevent that default behavior here,
