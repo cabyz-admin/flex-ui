@@ -1,7 +1,18 @@
 # nixpacks.toml
 
 [phases.install]
-# This overrides the default npm install/ci command used by Nixpacks
-# We use --omit=dev to skip development dependencies
-# We use --no-optional to skip optional dependencies like fsevents
-cmds = ["npm ci --omit=dev --no-optional"]
+# Keep using npm ci if package-lock.json exists, as it's generally better for CI
+# Prepend the environment variable setting to the command
+cmds = ["npm_config_optional=false npm ci --omit=dev"]
+
+# It's also good practice to ensure Node.js version is explicitly set
+# if not already done elsewhere or if auto-detection isn't sufficient.
+# providers = ["nodejs@18"] # Uncomment if needed, or manage via [phases.setup]
+
+[phases.build]
+# Your railway-build.sh will run after the install phase
+cmds = ["./railway-build.sh"]
+
+[phases.start]
+# Your railway-start.sh will run to deploy
+cmds = ["./railway-start.sh"]
