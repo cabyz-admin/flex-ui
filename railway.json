@@ -2,7 +2,7 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd serverless-functions && npm ci --no-optional && npm run build"
+    "buildCommand": "npm ci --no-optional && cd serverless-functions && npm ci --no-optional && npm run build"
   },
   "deploy": {
     "startCommand": "cd serverless-functions && npm run start:prod",
