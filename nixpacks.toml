@@ -2,19 +2,18 @@
 
 [phases.install]
 # This command will be run by Nixpacks during its 'install' phase, BEFORE the buildCommand in railway.toml.
-# We ensure optional dependencies are skipped and only production dependencies are installed.
+# We will delete the existing lockfile and node_modules, then run npm install to generate a new, clean lockfile
+# for the Linux environment, ensuring optional dependencies like fsevents are handled correctly.
 cmds = [
-  "echo 'DEBUG: Custom Nixpacks install phase (nixpacks.toml)'",
-  "echo 'DEBUG: Listing files in /app to check for .npmrc:'",
-  "ls -la /app",
-  "echo 'DEBUG: Contents of /app/.npmrc (if it exists):'",
-  "cat /app/.npmrc || echo 'DEBUG: /app/.npmrc not found'",
-  "echo 'DEBUG: Setting npm config optional=false directly'",
-  "npm config set optional false",
-  "echo 'DEBUG: Verifying npm config optional setting:'",
-  "npm config get optional",
-  "echo 'DEBUG: Attempting npm ci --omit=dev --omit=optional'",
-  "npm ci --omit=dev --omit=optional"
+  "echo 'DEBUG: Nixpacks install phase: Attempting to fix fsevents issue by regenerating package-lock.json'",
+  "echo 'DEBUG: Removing existing node_modules and package-lock.json'",
+  "rm -rf node_modules package-lock.json",
+  "echo 'DEBUG: Running npm install --omit=dev --omit=optional to generate new lockfile and install prod deps'",
+  "npm install --omit=dev --omit=optional",
+  "echo 'DEBUG: Nixpacks install phase (npm install) finished.'",
+  "echo 'DEBUG: Verifying presence of new package-lock.json and node_modules'",
+  "ls -la package-lock.json || echo 'DEBUG: New package-lock.json NOT found'",
+  "ls -d node_modules || echo 'DEBUG: node_modules directory NOT found'"
 ]
 
 # No other phases (like build or start) need to be defined here,
