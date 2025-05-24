@@ -1,9 +1,17 @@
 # nixpacks.toml
 
+[phases.setup]
+# Install build dependencies
+pkgs = ["nodejs", "python3", "make", "gcc", "g++", "git"]
+
 [phases.install]
 # This command will be run by Nixpacks during its 'install' phase.
 # We're using a simple echo command to prevent the default 'npm ci' from running.
 # The actual installation will be handled by railway-unified-build.sh.
-cmds = ["echo 'Skipping default Nixpacks install phase. Dependencies will be installed in railway-unified-build.sh.'"]
+cmds = [
+  "echo 'Skipping default Nixpacks install phase. Dependencies will be installed in railway-unified-build.sh.'",
+  # Ensure we have a recent version of npm
+  "npm install -g npm@latest"
+]
 
 # The 'build' and 'start' phases are defined by railway.toml's buildCommand and startCommand.

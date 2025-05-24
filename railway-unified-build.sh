@@ -23,7 +23,16 @@ npm install -g serve
 
 echo "DEBUG: Building Flex plugin..."
 cd plugin-flex-ts-template-v2
+
+# Install the Twilio Flex plugin non-interactively
+echo "DEBUG: Installing @twilio-labs/plugin-flex..."
+npm install -g twilio-cli
+# Use --yes to automatically answer yes to any prompts
+twilio plugins:install @twilio-labs/plugin-flex@7.1.0 --yes
+
+# Install dependencies and build
 npm install --omit=dev --omit=optional
+echo "DEBUG: Building Flex plugin..."
 npm run build
 cd ..
 

@@ -97,13 +97,45 @@ echo "=== Railway Start/Deploy Phase End: All deployments initiated. ==="
 echo "Starting Flex UI server..."
 cd plugin-flex-ts-template-v2
 
+# Ensure serve is installed locally (in case it wasn't installed globally)
+echo "DEBUG: Ensuring serve is installed..."
+npm install serve --save-dev
+
 # For production, we'll use the --name and --no-browser flags
 # and specify a port that Railway expects (from the PORT environment variable)
 PORT=${PORT:-3000}
 echo "Starting Flex UI on port $PORT..."
-npx serve -s build -l $PORT
 
-# Keep the container running
+# Check if build directory exists
+if [ ! -d "build" ]; then
+  echo "ERROR: Build directory not found. The build process may have failed."
+  echo "Current directory: $(pwd)"
+  ls -la
+  exit 1
+fi
+
+# Start the server with a 5-minute timeout to catch any startup errors
+# If the server crashes, the container will restart
+echo "Starting server on port $PORT..."
+npx serve -s build -l $PORT &
+SERVER_PID=$!
+
+echo "Waiting for server to start..."
+sleep 5
+
+# Check if the server is still running
+if ! ps -p $SERVER_PID > /dev/null; then
+  echo "ERROR: Server failed to start. Check the logs above for errors."
+  exit 1
+fi
+
 echo "Flex UI server is running on port $PORT"
-# This will keep the container alive
-while true; do sleep 1000; done
+
+# Keep the container running and monitor the server process
+while true; do
+  if ! ps -p $SERVER_PID > /dev/null; then
+    echo "ERROR: Server process has stopped. Exiting..."
+    exit 1
+  fi
+  sleep 5
+done
