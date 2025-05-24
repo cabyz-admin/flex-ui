@@ -6,18 +6,17 @@ echo "DEBUG: Current directory: $(pwd)"
 echo "DEBUG: Listing files in current directory (before any npm operations):"
 ls -la
 
-echo "DEBUG: STEP 1: Cleaning slate and installing production dependencies (regenerating lockfile for Linux)..."
-# Remove existing node_modules and package-lock.json to ensure a clean start with repo files.
-# This is crucial because Nixpacks copies all repo files (including potentially macOS-generated lockfile)
-# before this script runs.
-rm -rf node_modules package-lock.json
-echo "DEBUG: Removed node_modules and package-lock.json."
+echo "DEBUG: STEP 1: Installing production dependencies..."
+# Remove only package-lock.json to ensure we don't use the macOS-generated one
+rm -f package-lock.json
+echo "DEBUG: Removed package-lock.json."
 
-# Install production dependencies. This will read package.json, generate a new Linux-appropriate
-# package-lock.json, and install only production dependencies, respecting --omit=optional.
-# The .npmrc file with 'optional=false' should also be respected.
-npm install --omit=dev --omit=optional
-echo "DEBUG: FINISHED installing production dependencies and generated new package-lock.json."
+# Install production dependencies without generating a new package-lock.json
+# This avoids issues with the node_modules/.cache being mounted as a volume
+echo "DEBUG: Installing production dependencies with --no-package-lock..."
+npm install --omit=dev --omit=optional --no-package-lock
+
+echo "DEBUG: FINISHED installing production dependencies."
 
 echo "DEBUG: Listing files in current directory (after npm install):"
 ls -la
