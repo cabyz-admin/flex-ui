@@ -94,48 +94,44 @@ cd ..
 echo "=== Railway Start/Deploy Phase End: All deployments initiated. ==="
 
 # --- 7. Start the Flex UI Server ---
-echo "Starting Flex UI server..."
+echo "=== Starting Flex UI Server ==="
 cd plugin-flex-ts-template-v2
 
-# Ensure serve is installed locally (in case it wasn't installed globally)
-echo "DEBUG: Ensuring serve is installed..."
-npm install serve --save-dev
-
-# For production, we'll use the --name and --no-browser flags
-# and specify a port that Railway expects (from the PORT environment variable)
+# Set default port if not provided
 PORT=${PORT:-3000}
-echo "Starting Flex UI on port $PORT..."
 
-# Check if build directory exists
+# Verify build directory exists
 if [ ! -d "build" ]; then
-  echo "ERROR: Build directory not found. The build process may have failed."
+  echo "=== ERROR: Build directory not found ==="
   echo "Current directory: $(pwd)"
   ls -la
   exit 1
 fi
 
-# Start the server with a 5-minute timeout to catch any startup errors
-# If the server crashes, the container will restart
-echo "Starting server on port $PORT..."
-npx serve -s build -l $PORT &
+echo "=== Installing serve locally..."
+npm install serve@14.2.1 --save-dev --no-package-lock --prefer-offline --no-audit
+
+echo "=== Starting server on port $PORT"
+# Use the local serve binary from node_modules
+./node_modules/.bin/serve -s build -l $PORT &
 SERVER_PID=$!
 
-echo "Waiting for server to start..."
+echo "=== Waiting for server to start..."
 sleep 5
 
-# Check if the server is still running
+# Check if server started successfully
 if ! ps -p $SERVER_PID > /dev/null; then
-  echo "ERROR: Server failed to start. Check the logs above for errors."
+  echo "=== ERROR: Server failed to start ==="
   exit 1
 fi
 
-echo "Flex UI server is running on port $PORT"
+echo "=== Server is running on port $PORT ==="
 
-# Keep the container running and monitor the server process
+# Monitor server process and exit if it stops
 while true; do
   if ! ps -p $SERVER_PID > /dev/null; then
-    echo "ERROR: Server process has stopped. Exiting..."
+    echo "=== ERROR: Server process has stopped ==="
     exit 1
   fi
-  sleep 5
+  sleep 10
 done

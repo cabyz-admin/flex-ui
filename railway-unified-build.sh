@@ -1,40 +1,44 @@
 #!/bin/bash
-echo "DEBUG: railway-unified-build.sh SCRIPT IS EXECUTING NOW"
-set -e # Exit immediately if a command exits with a non-zero status.
+set -e  # Exit immediately if a command exits with a non-zero status
 
-echo "DEBUG: Current directory: $(pwd)"
-echo "DEBUG: Listing files in current directory (before any npm operations):"
-ls -la
+echo "=== Starting Railway Build Process ==="
+echo "Current directory: $(pwd)"
 
-echo "DEBUG: STEP 1: Installing production dependencies..."
-# Remove only package-lock.json to ensure we don't use the macOS-generated one
+echo "=== STEP 1: Installing production dependencies ==="
+# Clean up any existing lock files to prevent conflicts
 rm -f package-lock.json
-echo "DEBUG: Removed package-lock.json."
+rm -f yarn.lock
 
-# Install production dependencies without generating a new package-lock.json
-# This avoids issues with the node_modules/.cache being mounted as a volume
-echo "DEBUG: Installing production dependencies with --no-package-lock..."
-npm install --omit=dev --omit=optional --no-package-lock
+# Install only production dependencies
+npm install --omit=dev --omit=optional --no-package-lock --prefer-offline --no-audit
 
-echo "DEBUG: FINISHED installing production dependencies."
+echo "=== STEP 2: Installing build tools ==="
+# Install serve globally for serving the application
+npm install -g serve@14.2.1
 
-echo "DEBUG: Installing serve package..."
-npm install -g serve
+# Install Twilio CLI and Flex plugin
+npm install -g twilio-cli@5.22.7
+# Use --force to avoid interactive prompts
+twilio plugins:install @twilio-labs/plugin-flex@7.1.0 --force
 
-echo "DEBUG: Building Flex plugin..."
+echo "=== STEP 3: Building Flex plugin ==="
 cd plugin-flex-ts-template-v2
 
-# Install the Twilio Flex plugin non-interactively
-echo "DEBUG: Installing @twilio-labs/plugin-flex..."
-npm install -g twilio-cli
-# Use --yes to automatically answer yes to any prompts
-twilio plugins:install @twilio-labs/plugin-flex@7.1.0 --yes
+# Install plugin dependencies
+npm install --omit=dev --omit=optional --no-package-lock --prefer-offline --no-audit
 
-# Install dependencies and build
-npm install --omit=dev --omit=optional
-echo "DEBUG: Building Flex plugin..."
+# Build the plugin
+echo "Building Flex plugin..."
 npm run build
+
+# Verify build was successful
+if [ ! -d "build" ]; then
+  echo "ERROR: Build directory not found. Build likely failed."
+  exit 1
+fi
+
 cd ..
+echo "=== Build completed successfully ==="
 
 echo "DEBUG: Listing files in current directory (after build):"
 ls -la
