@@ -3,5 +3,11 @@
 # has been moved to railway-unified-build.sh to ensure it runs after
 # Nixpacks copies all project files into the build environment.
 
-# No custom phases needed here for now.
-# Nixpacks will use its default install and setup providers (e.g., Node.js).
+[phases.install]
+# Override Nixpacks default install command (which would be 'npm ci' due to presence of package-lock.json).
+# We want to defer all dependency installation to railway-unified-build.sh.
+cmds = [
+  "echo 'Nixpacks default install phase overridden. Dependency installation will be handled by railway-unified-build.sh.'"
+]
+
+# The 'build' and 'start' phases are defined by railway.toml's buildCommand and startCommand.
