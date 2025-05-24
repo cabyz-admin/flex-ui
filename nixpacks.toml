@@ -9,8 +9,12 @@ cmds = [
   "ls -la /app",
   "echo 'DEBUG: Contents of /app/.npmrc (if it exists):'",
   "cat /app/.npmrc || echo 'DEBUG: /app/.npmrc not found'",
+  "echo 'DEBUG: Setting npm config optional=false directly'",
+  "npm config set optional false",
+  "echo 'DEBUG: Verifying npm config optional setting:'",
+  "npm config get optional",
   "echo 'DEBUG: Attempting npm ci --omit=dev --omit=optional'",
-  "npm ci --omit=dev --omit=optional" # Using --omit=optional as suggested by npm warning
+  "npm ci --omit=dev --omit=optional"
 ]
 
 # No other phases (like build or start) need to be defined here,
