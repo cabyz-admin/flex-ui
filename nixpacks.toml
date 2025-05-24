@@ -1,0 +1,12 @@
+# nixpacks.toml (Minimal version to override default install)
+
+[phases.install]
+# This command will be run by Nixpacks during its 'install' phase, BEFORE the buildCommand in railway.toml.
+# We ensure optional dependencies are skipped and only production dependencies are installed.
+cmds = [
+  "echo 'DEBUG: Custom Nixpacks install phase: Running npm_config_optional=false npm ci --omit=dev --no-optional'",
+  "npm_config_optional=false npm ci --omit=dev --no-optional"
+]
+
+# No other phases (like build or start) need to be defined here,
+# as they are handled by railway.toml's buildCommand and startCommand.

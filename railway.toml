@@ -5,6 +5,8 @@
 # The buildCommand then takes over all subsequent build steps.
 [build]
 builder = "NIXPACKS"
+# Tell Nixpacks to use our custom nixpacks.toml for its phase configurations
+nixpacksConfigPath = "./nixpacks.toml"
 # Nixpacks will make Node.js and npm available.
 # Our script handles all npm install steps.
 # We also ensure the scripts are executable.
