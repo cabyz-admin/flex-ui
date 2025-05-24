@@ -1,11 +1,14 @@
 {
-    "build": {
-      "builder": "NIXPACKS",
-      "buildCommand": "npm install && npm run build"
-    },
-    "deploy": {
-      "startCommand": "npm run start:prod",
-      "restartPolicyType": "ON_FAILURE",
-      "restartPolicyMaxRetries": 3
-    }
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "cd serverless-functions && npm ci && npm run build"
+  },
+  "deploy": {
+    "startCommand": "cd serverless-functions && npm run start:prod",
+    "healthcheckPath": "/healthcheck",
+    "healthcheckTimeout": 100,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
   }
+}
