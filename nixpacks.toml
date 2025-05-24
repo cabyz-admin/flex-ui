@@ -1,0 +1,7 @@
+# nixpacks.toml
+
+[phases.install]
+# This overrides the default npm install/ci command used by Nixpacks
+# We use --omit=dev to skip development dependencies
+# We use --no-optional to skip optional dependencies like fsevents
+cmds = ["npm ci --omit=dev --no-optional"]

@@ -5,7 +5,7 @@ echo "=== Railway Build Phase Start ==="
 # Node.js v18 should be set in Railway service settings (Nixpacks usually auto-detects or can be configured)
 
 echo "Installing root dependencies..."
-npm install --ignore-scripts
+npm ci --omit=dev --no-optional --ignore-scripts
 
 echo "Installing Twilio Serverless Plugin..."
 npm run install-serverless-plugin # From your workflow
