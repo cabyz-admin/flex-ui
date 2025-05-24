@@ -1,20 +1,7 @@
-# nixpacks.toml (Minimal version to override default install)
+# nixpacks.toml
+# This file is now minimal. The primary dependency installation logic
+# has been moved to railway-unified-build.sh to ensure it runs after
+# Nixpacks copies all project files into the build environment.
 
-[phases.install]
-# This command will be run by Nixpacks during its 'install' phase, BEFORE the buildCommand in railway.toml.
-# We will delete the existing lockfile and node_modules, then run npm install to generate a new, clean lockfile
-# for the Linux environment, ensuring optional dependencies like fsevents are handled correctly.
-cmds = [
-  "echo 'DEBUG: Nixpacks install phase: Attempting to fix fsevents issue by regenerating package-lock.json'",
-  "echo 'DEBUG: Removing existing node_modules and package-lock.json'",
-  "rm -rf node_modules package-lock.json",
-  "echo 'DEBUG: Running npm install --omit=dev --omit=optional to generate new lockfile and install prod deps'",
-  "npm install --omit=dev --omit=optional",
-  "echo 'DEBUG: Nixpacks install phase (npm install) finished.'",
-  "echo 'DEBUG: Verifying presence of new package-lock.json and node_modules'",
-  "ls -la package-lock.json || echo 'DEBUG: New package-lock.json NOT found'",
-  "ls -d node_modules || echo 'DEBUG: node_modules directory NOT found'"
-]
-
-# No other phases (like build or start) need to be defined here,
-# as they are handled by railway.toml's buildCommand and startCommand.
+# No custom phases needed here for now.
+# Nixpacks will use its default install and setup providers (e.g., Node.js).

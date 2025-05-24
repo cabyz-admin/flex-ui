@@ -3,17 +3,28 @@ echo "DEBUG: railway-unified-build.sh SCRIPT IS EXECUTING NOW"
 set -e # Exit immediately if a command exits with a non-zero status.
 
 echo "DEBUG: Current directory: $(pwd)"
-echo "DEBUG: Listing files in current directory:"
+echo "DEBUG: Listing files in current directory (before any npm operations):"
 ls -la
 
-echo "DEBUG: STEP 1: Running initial production npm ci..."
-# Ensure fsevents and other optional dependencies are handled correctly, and only install production deps
-# Your .npmrc file with 'optional=false' will be respected here.
-npm_config_optional=false npm ci --omit=dev
-echo "DEBUG: FINISHED initial production npm ci."
+echo "DEBUG: STEP 1: Cleaning slate and installing production dependencies (regenerating lockfile for Linux)..."
+# Remove existing node_modules and package-lock.json to ensure a clean start with repo files.
+# This is crucial because Nixpacks copies all repo files (including potentially macOS-generated lockfile)
+# before this script runs.
+rm -rf node_modules package-lock.json
+echo "DEBUG: Removed node_modules and package-lock.json."
+
+# Install production dependencies. This will read package.json, generate a new Linux-appropriate
+# package-lock.json, and install only production dependencies, respecting --omit=optional.
+# The .npmrc file with 'optional=false' should also be respected.
+npm install --omit=dev --omit=optional
+echo "DEBUG: FINISHED installing production dependencies and generated new package-lock.json."
+
+echo "DEBUG: Listing files in current directory (after npm install):"
+ls -la
 
 echo "DEBUG: STEP 2: Installing specific devDependencies needed for build/deploy scripts..."
 # Based on your package.json devDependencies and common script needs:
+# This will use the newly generated package-lock.json.
 npm install \
   shelljs@0.8.5 \
   twilio-cli@5.22.7 \
