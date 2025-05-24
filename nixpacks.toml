@@ -1,13 +1,9 @@
 # nixpacks.toml
 
-[[providers]]
-name = "node"
-# This specifically overrides the default install command for the Node.js provider.
-# When Nixpacks detects a package-lock.json, its Node.js provider defaults to 'npm ci'.
-# We set installCmd to a harmless echo command to prevent that default behavior here,
-# as it causes issues with fsevents on Linux before our main build script can run.
-# The actual, full dependency installation is handled correctly in railway-unified-build.sh.
-installCmd = "echo 'Nixpacks Node.js provider installCmd overridden. Main install in railway-unified-build.sh.'"
+[phases.install]
+# This command will be run by Nixpacks during its 'install' phase.
+# We're using a simple echo command to prevent the default 'npm ci' from running.
+# The actual installation will be handled by railway-unified-build.sh.
+cmds = ["echo 'Skipping default Nixpacks install phase. Dependencies will be installed in railway-unified-build.sh.'"]
 
-# No general [phases.install] override is needed if the provider-specific one works.
 # The 'build' and 'start' phases are defined by railway.toml's buildCommand and startCommand.
