@@ -4,8 +4,13 @@
 # This command will be run by Nixpacks during its 'install' phase, BEFORE the buildCommand in railway.toml.
 # We ensure optional dependencies are skipped and only production dependencies are installed.
 cmds = [
-  "echo 'DEBUG: Custom Nixpacks install phase: Running npm_config_optional=false npm ci --omit=dev --no-optional'",
-  "npm_config_optional=false npm ci --omit=dev --no-optional"
+  "echo 'DEBUG: Custom Nixpacks install phase (nixpacks.toml)'",
+  "echo 'DEBUG: Listing files in /app to check for .npmrc:'",
+  "ls -la /app",
+  "echo 'DEBUG: Contents of /app/.npmrc (if it exists):'",
+  "cat /app/.npmrc || echo 'DEBUG: /app/.npmrc not found'",
+  "echo 'DEBUG: Attempting npm ci --omit=dev --omit=optional'",
+  "npm ci --omit=dev --omit=optional" # Using --omit=optional as suggested by npm warning
 ]
 
 # No other phases (like build or start) need to be defined here,

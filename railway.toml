@@ -21,3 +21,9 @@ startCommand = "./railway-start.sh"
 # healthcheckPath = "/"
 # healthcheckTimeout = 100
 # restartPolicyType = "ON_FAILURE" # Or "ALWAYS", "NEVER"
+
+[phases.install]
+cmds = [
+    "ls -la /app",
+    "cat /app/.npmrc"
+]
