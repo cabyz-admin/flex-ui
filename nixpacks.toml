@@ -1,9 +1,12 @@
-# nixpacks.toml
+# providers = ["node"] # Usually auto-detected if package.json is present
 
-[phases.install]
-# This command will be run by Nixpacks during its 'install' phase.
-# We're using a simple echo command to prevent the default 'npm ci' from running.
-# The actual installation will be handled by railway-unified-build.sh.
-cmds = ["echo 'Skipping default Nixpacks install phase. Dependencies will be installed in railway-unified-build.sh.'"]
+[phases.setup]
+nixPkgs = ["nodejs_18"] # Or your preferred stable Node.js version (e.g., nodejs_20)
 
-# The 'build' and 'start' phases are defined by railway.toml's buildCommand and startCommand.
+[phases.build]
+cmds = ["chmod +x ./railway-unified-build.sh && ./railway-unified-build.sh"]
+
+[start]
+command = "node server.js" # This starts your Express server
+# healthcheckPath = "/" # Optional: Add a health check endpoint to server.js if desired
+# healthcheckTimeout = "300s"
