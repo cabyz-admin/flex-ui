@@ -3,8 +3,11 @@
 [phases.setup]
   nixPkgs = ["nodejs_20"] # Use Node.js 20
 
-# railway-unified-build.sh handles all npm installs.
+# Override the default install phase to prevent npm ci
+[phases.install]
+  cmds = ["echo 'Skipping default npm install - handled by build script'"]
 
+# railway-unified-build.sh handles all npm installs.
 [phases.build]
   cmds = ["chmod +x ./railway-unified-build.sh && ./railway-unified-build.sh"]
 
