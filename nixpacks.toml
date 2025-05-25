@@ -17,3 +17,5 @@
 [variables]
   NODE_ENV = "production"
   NIXPACKS_NODE_VERSION = "20" # Explicitly set Node version for Nixpacks
+  # Pass through the AUTH_TOKEN if it exists in Railway environment
+  AUTH_TOKEN = "${AUTH_TOKEN:-4320eb2a6d58faef9c9c21a8f13aa3e3}"
