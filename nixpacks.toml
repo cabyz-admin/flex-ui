@@ -1,12 +1,16 @@
-# providers = ["node"] # Usually auto-detected if package.json is present
+# nixpacks.toml
 
 [phases.setup]
-nixPkgs = ["nodejs_18"] # Or your preferred stable Node.js version (e.g., nodejs_20)
+  nixPkgs = ["nodejs_20"] # Use Node.js 20
+
+# railway-unified-build.sh handles all npm installs.
 
 [phases.build]
-cmds = ["chmod +x ./railway-unified-build.sh && ./railway-unified-build.sh"]
+  cmds = ["chmod +x ./railway-unified-build.sh && ./railway-unified-build.sh"]
 
 [start]
-command = "node server.js" # This starts your Express server
-# healthcheckPath = "/" # Optional: Add a health check endpoint to server.js if desired
-# healthcheckTimeout = "300s"
+  command = "node server.js" # Starts your Express server
+
+[variables]
+  NODE_ENV = "production"
+  NIXPACKS_NODE_VERSION = "20" # Explicitly set Node version for Nixpacks
