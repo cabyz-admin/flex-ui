@@ -23,6 +23,7 @@
     "@twilio-paste/core": "^17.0.1",
     "@twilio-paste/icons": "^9.4.2",
     "@twilio/flex-plugin": "7.1.0",
+    "@types/redux": "^3.6.31",
     "emoji-mart": "5.5.2",
     "lodash": "^4.17.20",
     "luxon": "^3.1.1",
@@ -30,6 +31,7 @@
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "react-minimal-pie-chart": "^8.4.0",
+    "redux": "^3.7.2",
     "rrule": "^2.7.1",
     "semver": "^7.6.3",
     "simple-audio-recorder": "^1.2.3"
