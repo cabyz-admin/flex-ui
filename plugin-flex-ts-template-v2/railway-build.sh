@@ -12,26 +12,28 @@ ls -la
 export CI=true
 export NODE_ENV=production
 
-# Set up npm to use a writable directory
-export NPM_CONFIG_PREFIX=/app/.npm-global
-export PATH="/app/.npm-global/bin:$PATH"
-mkdir -p /app/.npm-global
-npm config set prefix '/app/.npm-global'
+# Create a temporary directory for npm cache
+export NPM_CONFIG_CACHE="$(pwd)/.npm"
+mkdir -p "$NPM_CONFIG_CACHE"
 
-# Install dependencies locally instead of globally
+# Clean up any previous builds
+rm -rf build node_modules package-lock.json
+
+# Install all dependencies locally
 echo "INFO: Installing project dependencies..."
-rm -f package-lock.json yarn.lock pnpm-lock.yaml
+npm install --legacy-peer-deps --omit=optional
 
-# Install flex-plugin-scripts locally
-npm install --legacy-peer-deps --omit=optional @twilio/flex-plugin-scripts@7.1.0
-
-# Install other required dependencies
+# Install build dependencies
+echo "INFO: Installing build dependencies..."
 npm install --legacy-peer-deps --omit=optional \
+  @twilio/flex-plugin-scripts@7.1.0 \
   @twilio/flex-plugin@7.1.0 \
   @twilio/flex-dev-utils@7.1.0 \
-  webpack webpack-cli webpack-dev-server
+  webpack@^5.88.2 \
+  webpack-cli@^5.1.4 \
+  webpack-dev-server@^4.15.1
 
-# Build using the locally installed flex-plugin-scripts
+# Build the plugin
 echo "INFO: Building plugin..."
 TWILIO_ACCOUNT_SID=AC00000000000000000000000000000000 \
 TWILIO_AUTH_TOKEN=${AUTH_TOKEN:-4320eb2a6d58faef9c9c21a8f13aa3e3} \
@@ -53,20 +55,59 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Log all requests
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
 // Serve static files from the build directory
-app.use(express.static(path.join(__dirname, 'build')));
+const staticPath = path.join(__dirname, 'build');
+console.log(`Serving static files from: ${staticPath}`);
+app.use(express.static(staticPath));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
 
 // All other GET requests not handled will return the React app
 app.get('*', (req, res) => {
-  res.sendFile(path.resolve(__dirname, 'build', 'index.html'));
+  const indexPath = path.resolve(__dirname, 'build', 'index.html');
+  console.log(`Serving index.html from: ${indexPath}`);
+  
+  // Check if file exists
+  const fs = require('fs');
+  if (!fs.existsSync(indexPath)) {
+    console.error('ERROR: index.html not found in build directory');
+    return res.status(500).send('Build files not found. The build may have failed.');
+  }
+  
+  res.sendFile(indexPath);
 });
 
-app.listen(PORT, () => {
+// Error handling
+app.use((err, req, res, next) => {
+  console.error('Server error:', err.stack);
+  res.status(500).send('Something broke!');});
+
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log('Build directory contents:', require('fs').readdirSync('build'));
+});
+
+// Handle shutdown gracefully
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });
 EOL
 
 # Install express for the server
+echo "INFO: Installing express server..."
 npm install express --save-prod
 
 echo "=== BUILD SUCCESS ==="

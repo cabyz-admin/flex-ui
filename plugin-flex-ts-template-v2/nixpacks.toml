@@ -1,38 +1,45 @@
-# nixpacks.toml for Flex Plugin
+# nixpacks.toml for Twilio Flex Plugin
 
 [phases.setup]
-  nixPkgs = ["nodejs_20"]  # Use Node.js 20
+  nixPkgs = ["nodejs_20"]
+  cmds = [
+    "echo 'Setting up Node.js environment...'
+  ]
 
 [phases.install]
   cmds = [
-    "echo 'Installing system dependencies...'",
-    # Install any system dependencies if needed
+    "echo 'Running npm install...'
   ]
 
 [phases.build]
   cmds = [
-    "echo 'Starting build process...'",
+    "echo 'Starting build process...'
     "chmod +x ./railway-build.sh",
-    "./railway-build.sh"
+    "NODE_ENV=production ./railway-build.sh"
   ]
 
 # Start command for Railway
 [start]
-  command = "node server.js"
+  cmd = "node server.js"
 
 # Health check configuration for Railway
 [healthcheck]
-  path = "/"
+  path = "/health"
   initial_delay = "10s"
   interval = "30s"
   timeout = "10s"
 
 # Environment variables
 [variables]
+  # Node.js configuration
   NODE_ENV = "production"
-  NIXPACKS_NODE_VERSION = "20"
-  NODE_OPTIONS = "--max-old-space-size=1024 --no-warnings"
+  NODE_OPTIONS = "--max-old-space-size=2048 --no-warnings"
+  NPM_CONFIG_PRODUCTION = "false"
+  NPM_CONFIG_LOGLEVEL = "info"
+  
+  # Server configuration
   PORT = "3000"
+  HOST = "0.0.0.0"
   
   # Twilio configuration
   TWILIO_ACCOUNT_SID = "${TWILIO_ACCOUNT_SID}"
@@ -40,23 +47,45 @@
   
   # Flex plugin environment
   TWILIO_FLEX_PLUGIN_ENV = "production"
-  
-  # Required for some Twilio Flex plugins
   REACT_APP_FLEX_APP_URL = "/"
   
+  # Build configuration
+  CI = "true"
+  NODE_VERBOSE = "true"
+
 [build.args]
   # Ensure we have enough memory for the build
   NODE_OPTIONS = "--max-old-space-size=2048"
+  NPM_CONFIG_PRODUCTION = "false"
 
 [build.ignore]
   # Ignore unnecessary files to speed up builds
   ignore = [
-    "node_modules",
-    ".git",
-    ".github",
-    ".vscode",
-    "coverage",
-    "dist",
-    "build",
-    "*.log"
+    "**/node_modules",
+    "**/.git",
+    "**/.github",
+    "**/.vscode",
+    "**/coverage",
+    "**/dist",
+    "**/build",
+    "**/*.log",
+    "**/*.md",
+    "**/.env*",
+    "!package.json",
+    "!package-lock.json",
+    "!tsconfig.json",
+    "!webpack*.js",
+    "!*.ts",
+    "!*.tsx",
+    "!*.js",
+    "!public/**"
   ]
+
+# Metadata
+[metadata]
+  name = "Twilio Flex Plugin"
+  description = "A Twilio Flex plugin"
+  keywords = ["twilio", "flex", "plugin"]
+  repository = ""
+  license = "MIT"
+  engines = { node = ">=16.0.0" }
