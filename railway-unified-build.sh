@@ -9,53 +9,62 @@ export CI=true
 export TWILIO_SKIP_SUBACCOUNT_PROMPT=true
 export TWILIO_DISABLE_INTERACTIVE=true
 
-# If AUTH_TOKEN is provided via environment, use it
-if [ -n "$AUTH_TOKEN" ]; then
-    export TWILIO_AUTH_TOKEN="$AUTH_TOKEN"
-else
-    # Fallback to the provided token if needed
-    export TWILIO_AUTH_TOKEN="4320eb2a6d58faef9c9c21a8f13aa3e3"
-fi
+# AUTH_TOKEN is passed from nixpacks.toml which has a default
+export TWILIO_AUTH_TOKEN="$AUTH_TOKEN"
+echo "INFO: TWILIO_AUTH_TOKEN is set."
+
+echo "INFO: Installing Twilio CLI..."
+npm install -g twilio-cli@latest --omit=dev --omit=optional
+
+echo "INFO: Installing Twilio Flex plugin via npm..."
+npm install -g @twilio-labs/plugin-flex@latest --omit=dev --omit=optional || {
+    echo "WARN: Global npm install of Flex plugin failed, trying via twilio plugins..."
+    printf "y\n" | twilio plugins:install @twilio-labs/plugin-flex@latest || {
+        echo "WARN: Plugin install with auto-yes failed, trying echo approach..."
+        echo "y" | twilio plugins:install @twilio-labs/plugin-flex@latest
+    }
+}
+
+echo "INFO: Checking Twilio CLI plugins..."
+twilio plugins || echo "INFO: Plugin list command failed, but continuing..."
+
+twilio plugins:link @twilio-labs/plugin-flex 2>/dev/null || true
 
 echo "INFO: Installing root project dependencies..."
-# Remove lockfile to avoid fsevents issues on Linux if it was committed
 rm -f package-lock.json yarn.lock pnpm-lock.yaml
-npm install --legacy-peer-deps
+npm install --legacy-peer-deps --omit=dev --omit=optional
 
 echo "INFO: Building the Flex Plugin..."
 cd plugin-flex-ts-template-v2
 
-# Install plugin dependencies
 echo "INFO: Installing plugin dependencies..."
-npm install --legacy-peer-deps
+npm install --legacy-peer-deps --omit=dev --omit=optional
 
-# Ensure webpack-cli is installed
-echo "INFO: Ensuring webpack-cli is installed..."
-npm install --save-dev webpack webpack-cli --legacy-peer-deps
-
-# Build the plugin using npm run build
-echo "INFO: Building plugin with npm run build..."
-CI=true npm run build || {
-    echo "ERROR: npm run build failed"
-    
-    # Fallback: try using the webpack directly with --no-stats to avoid prompts
-    echo "INFO: Trying direct webpack build..."
-    CI=true npx webpack-cli --mode production --config webpack.config.js --no-stats || {
-        echo "ERROR: Direct webpack build also failed"
-        exit 1
+echo "INFO: Running Twilio Flex plugin build..."
+printf "y\n$TWILIO_AUTH_TOKEN\n" | twilio flex:plugins:build || {
+    echo "WARN: Build with auto-answers failed, trying with just 'y'..."
+    echo "y" | twilio flex:plugins:build || {
+        echo "WARN: Build with echo 'y' failed, trying yes command..."
+        yes | twilio flex:plugins:build || {
+            echo "ERROR: All Twilio CLI Flex plugin build attempts failed. Trying direct npx build..."
+            npx @twilio/flex-plugin-scripts@latest build || {
+                echo "CRITICAL ERROR: Direct npx build also failed"
+                exit 1
+            }
+        }
     }
 }
 
-# Verify build output exists
-if [ -d "build" ]; then
-    echo "INFO: Build directory created successfully!"
-    echo "INFO: Build contents:"
-    ls -la build/
-else
-    echo "ERROR: Build directory was not created!"
-    echo "INFO: Current directory contents:"
+# Explicitly check for build directory creation
+if [ ! -d "build" ]; then
+    echo "CRITICAL ERROR: Flex plugin 'build' directory was NOT created in $(pwd)."
+    echo "Listing current directory contents (should be plugin-flex-ts-template-v2):"
     ls -la
-    exit 1
+    exit 1 # Fail the build script
+else
+    echo "INFO: Flex plugin 'build' directory successfully created in $(pwd)."
+    echo "Contents of 'build' directory:"
+    ls -la build
 fi
 
 cd ..
