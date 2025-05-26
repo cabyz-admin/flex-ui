@@ -1,0 +1,32 @@
+# nixpacks.toml for Flex Plugin
+
+[phases.setup]
+  nixPkgs = ["nodejs_20"]  # Use Node.js 20
+
+[phases.install]
+  cmds = ["echo 'Skipping default npm install - handled by build script'"]
+
+[phases.build]
+  cmds = [
+    "chmod +x ./railway-build.sh",
+    "./railway-build.sh"
+  ]
+
+# Start command for Railway
+[start]
+  command = "echo 'Build completed successfully. This is a static build - no server needed.' && tail -f /dev/null"
+
+# Health check configuration for Railway
+[healthcheck]
+  path = "/health"
+  initial_delay = "10s"
+  interval = "10s"
+  timeout = "5s"
+
+# Environment variables
+[variables]
+  NODE_ENV = "production"
+  NIXPACKS_NODE_VERSION = "20"
+  NODE_OPTIONS = "--max-old-space-size=1024 --no-warnings"
+  # Pass through the AUTH_TOKEN if it exists in Railway environment
+  AUTH_TOKEN = "${AUTH_TOKEN:-4320eb2a6d58faef9c9c21a8f13aa3e3}"

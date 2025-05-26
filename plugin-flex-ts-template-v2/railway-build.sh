@@ -2,7 +2,7 @@
 # Enable verbose output and exit on any error
 set -exo pipefail
 
-echo "=== RAILWAY BUILD STARTED ==="
+echo "=== FLEX PLUGIN BUILD STARTED ==="
 echo "INFO: Node version: $(node -v), npm version: $(npm -v)"
 echo "INFO: Current working directory: $(pwd)"
 echo "INFO: Directory contents:"
@@ -27,23 +27,9 @@ twilio --version || {
     exit 1
 }
 
-echo "INFO: Installing root project dependencies..."
+# Install project dependencies
+echo "INFO: Installing project dependencies..."
 rm -f package-lock.json yarn.lock pnpm-lock.yaml
-npm install --legacy-peer-deps --omit=dev --omit=optional
-
-echo "=== BUILDING FLEX PLUGIN ==="
-if [ ! -d "plugin-flex-ts-template-v2" ]; then
-    echo "ERROR: plugin-flex-ts-template-v2 directory not found!"
-    echo "Current directory contents:"
-    ls -la
-    exit 1
-fi
-
-cd plugin-flex-ts-template-v2
-echo "Current directory: $(pwd)"
-
-# Install plugin dependencies
-echo "INFO: Installing plugin dependencies..."
 npm install --legacy-peer-deps --omit=dev --omit=optional
 
 # Build using flex-plugin-scripts with proper environment variables
@@ -70,7 +56,5 @@ echo "=== BUILD SUCCESS ==="
 echo "Build directory contents:"
 ls -la build/
 
-cd ..
-
-echo "=== RAILWAY BUILD COMPLETED SUCCESSFULLY ==="
+echo "=== FLEX PLUGIN BUILD COMPLETED SUCCESSFULLY ==="
 exit 0
