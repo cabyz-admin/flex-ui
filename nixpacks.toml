@@ -9,13 +9,26 @@
 
 # railway-unified-build.sh handles all npm installs.
 [phases.build]
-  cmds = ["chmod +x ./railway-unified-build.sh && ./railway-unified-build.sh"]
+  cmds = [
+    "chmod +x ./railway-unified-build.sh",
+    "./railway-unified-build.sh"
+  ]
 
+# Start command with Node.js options for better error handling
 [start]
-  command = "node server.js" # Starts your Express server
+  command = "NODE_ENV=production NODE_OPTIONS=--unhandled-rejections=strict node server.js"
 
+# Health check configuration for Railway
+[healthcheck]
+  path = "/health"
+  initial_delay = "10s"
+  interval = "10s"
+  timeout = "5s"
+
+# Environment variables
 [variables]
   NODE_ENV = "production"
   NIXPACKS_NODE_VERSION = "20" # Explicitly set Node version for Nixpacks
+  NODE_OPTIONS = "--max-old-space-size=1024 --no-warnings"
   # Pass through the AUTH_TOKEN if it exists in Railway environment
   AUTH_TOKEN = "${AUTH_TOKEN:-4320eb2a6d58faef9c9c21a8f13aa3e3}"
