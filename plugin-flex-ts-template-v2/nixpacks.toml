@@ -3,18 +3,26 @@
 [phases.setup]
   nixPkgs = ["nodejs_20"]  # Use Node.js 20
 
+# Install phase - install dependencies and Twilio CLI globally
 [phases.install]
-  cmds = ["echo 'Skipping default npm install - handled by build script'"]
+  cmds = [
+    "npm install -g twilio-cli --omit=dev",
+    "npm install --legacy-peer-deps --omit=dev"
+  ]
 
+# Build phase - run the build script
 [phases.build]
   cmds = [
     "chmod +x ./railway-build.sh",
+    "export PATH=\"$PATH:/app/.npm-global/bin\"",
+    "mkdir -p /app/.npm-global",
+    "npm config set prefix '/app/.npm-global'",
     "./railway-build.sh"
   ]
 
-# Start command for Railway
+# Start command - just keep the container running
 [start]
-  command = "echo 'Build completed successfully. This is a static build - no server needed.' && tail -f /dev/null"
+  command = "echo 'Build completed successfully. This is a static build - no server needed.' && while true; do sleep 1000; done"
 
 # Health check configuration for Railway
 [healthcheck]
@@ -30,3 +38,5 @@
   NODE_OPTIONS = "--max-old-space-size=1024 --no-warnings"
   # Pass through the AUTH_TOKEN if it exists in Railway environment
   AUTH_TOKEN = "${AUTH_TOKEN:-4320eb2a6d58faef9c9c21a8f13aa3e3}"
+  # Ensure npm global bin is in PATH
+  PATH = "/app/.npm-global/bin:$PATH"
