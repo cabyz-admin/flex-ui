@@ -3,17 +3,17 @@
 [phases.setup]
   nixPkgs = ["nodejs_20"]
   cmds = [
-    "echo 'Setting up Node.js environment...'
+    "echo 'Setting up Node.js environment...'"
   ]
 
 [phases.install]
   cmds = [
-    "echo 'Running npm install...'
+    "echo 'Running npm install...'"
   ]
 
 [phases.build]
   cmds = [
-    "echo 'Starting build process...'
+    "echo 'Starting build process...'",
     "chmod +x ./railway-build.sh",
     "NODE_ENV=production ./railway-build.sh"
   ]
