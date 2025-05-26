@@ -29,14 +29,18 @@ cd plugin-flex-ts-template-v2
 echo "INFO: Installing plugin dependencies..."
 npm install --legacy-peer-deps
 
+# Ensure webpack-cli is installed
+echo "INFO: Ensuring webpack-cli is installed..."
+npm install --save-dev webpack webpack-cli --legacy-peer-deps
+
 # Build the plugin using npm run build
 echo "INFO: Building plugin with npm run build..."
-npm run build || {
+CI=true npm run build || {
     echo "ERROR: npm run build failed"
     
-    # Fallback: try using the webpack directly
+    # Fallback: try using the webpack directly with --no-stats to avoid prompts
     echo "INFO: Trying direct webpack build..."
-    npx webpack --mode production --config webpack.config.js || {
+    CI=true npx webpack-cli --mode production --config webpack.config.js --no-stats || {
         echo "ERROR: Direct webpack build also failed"
         exit 1
     }
