@@ -12,46 +12,31 @@ ls -la
 export CI=true
 export NODE_ENV=production
 
-# Ensure npm global bin is in PATH
+# Set up npm to use a writable directory
+export NPM_CONFIG_PREFIX=/app/.npm-global
 export PATH="/app/.npm-global/bin:$PATH"
 mkdir -p /app/.npm-global
 npm config set prefix '/app/.npm-global'
 
-echo "INFO: Checking Twilio CLI installation..."
-if ! command -v twilio &> /dev/null; then
-    echo "Twilio CLI not found, installing..."
-    npm install -g twilio-cli --omit=dev
-fi
-
-# Verify Twilio CLI installation
-twilio --version || {
-    echo "ERROR: Failed to install or find Twilio CLI"
-    echo "PATH: $PATH"
-    echo "Global npm modules:"
-    npm list -g --depth=0
-    exit 1
-}
-
-# Install project dependencies
+# Install dependencies locally instead of globally
 echo "INFO: Installing project dependencies..."
 rm -f package-lock.json yarn.lock pnpm-lock.yaml
-npm install --legacy-peer-deps --omit=dev --omit=optional
 
-# Install flex-plugin-scripts locally for npx to find
-echo "INFO: Installing @twilio/flex-plugin-scripts..."
-npm install @twilio/flex-plugin-scripts --save-dev
+# Install flex-plugin-scripts locally
+npm install --legacy-peer-deps --omit=optional @twilio/flex-plugin-scripts@7.1.0
 
-# Build using flex-plugin-scripts with proper environment variables
-echo "INFO: Building plugin using flex-plugin-scripts..."
+# Install other required dependencies
+npm install --legacy-peer-deps --omit=optional \
+  @twilio/flex-plugin@7.1.0 \
+  @twilio/flex-dev-utils@7.1.0 \
+  webpack webpack-cli webpack-dev-server
+
+# Build using the locally installed flex-plugin-scripts
+echo "INFO: Building plugin..."
 TWILIO_ACCOUNT_SID=AC00000000000000000000000000000000 \
 TWILIO_AUTH_TOKEN=${AUTH_TOKEN:-4320eb2a6d58faef9c9c21a8f13aa3e3} \
-./node_modules/.bin/twilio-flex-plugin-scripts build || {
-    echo "WARN: flex-plugin-scripts build failed, trying webpack directly..."
-    npx webpack --mode=production || {
-        echo "ERROR: All build methods failed"
-        exit 1
-    }
-}
+TWILIO_FLEX_PLUGIN_ENV=production \
+npx flex-plugin-scripts build
 
 # Verify build directory was created
 if [ ! -d "build" ]; then
@@ -61,30 +46,32 @@ if [ ! -d "build" ]; then
     exit 1
 fi
 
+# Create a simple server to serve the built files
+cat > server.js << 'EOL'
+const express = require('express');
+const path = require('path');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Serve static files from the build directory
+app.use(express.static(path.join(__dirname, 'build')));
+
+// All other GET requests not handled will return the React app
+app.get('*', (req, res) => {
+  res.sendFile(path.resolve(__dirname, 'build', 'index.html'));
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+EOL
+
+# Install express for the server
+npm install express --save-prod
+
 echo "=== BUILD SUCCESS ==="
 echo "Build directory contents:"
 ls -la build/
 
 echo "=== FLEX PLUGIN BUILD COMPLETED SUCCESSFULLY ==="
-
-# Create a simple HTTP server to serve the built files
-cat > server.js << 'EOL'
-const express = require('express');
-const path = require('path');
-const app = express();
-const port = process.env.PORT || 3000;
-
-app.use(express.static(path.join(__dirname, 'build')));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
-
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
-EOL
-
-echo "=== STARTING HTTP SERVER ==="
-npx express@4.17.1
-node server.js
+exit 0

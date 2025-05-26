@@ -3,40 +3,60 @@
 [phases.setup]
   nixPkgs = ["nodejs_20"]  # Use Node.js 20
 
-# Install phase - install dependencies and Twilio CLI globally
 [phases.install]
   cmds = [
-    "npm install -g twilio-cli --omit=dev",
-    "npm install --legacy-peer-deps --omit=dev"
+    "echo 'Installing system dependencies...'",
+    # Install any system dependencies if needed
   ]
 
-# Build phase - run the build script
 [phases.build]
   cmds = [
+    "echo 'Starting build process...'",
     "chmod +x ./railway-build.sh",
-    "export PATH=\"$PATH:/app/.npm-global/bin\"",
-    "mkdir -p /app/.npm-global",
-    "npm config set prefix '/app/.npm-global'",
     "./railway-build.sh"
   ]
 
-# Start command - just keep the container running
+# Start command for Railway
 [start]
-  command = "echo 'Build completed successfully. This is a static build - no server needed.' && while true; do sleep 1000; done"
+  command = "node server.js"
 
 # Health check configuration for Railway
 [healthcheck]
-  path = "/health"
+  path = "/"
   initial_delay = "10s"
-  interval = "10s"
-  timeout = "5s"
+  interval = "30s"
+  timeout = "10s"
 
 # Environment variables
 [variables]
   NODE_ENV = "production"
   NIXPACKS_NODE_VERSION = "20"
   NODE_OPTIONS = "--max-old-space-size=1024 --no-warnings"
-  # Pass through the AUTH_TOKEN if it exists in Railway environment
-  AUTH_TOKEN = "${AUTH_TOKEN:-4320eb2a6d58faef9c9c21a8f13aa3e3}"
-  # Ensure npm global bin is in PATH
-  PATH = "/app/.npm-global/bin:$PATH"
+  PORT = "3000"
+  
+  # Twilio configuration
+  TWILIO_ACCOUNT_SID = "${TWILIO_ACCOUNT_SID}"
+  TWILIO_AUTH_TOKEN = "${TWILIO_AUTH_TOKEN:-4320eb2a6d58faef9c9c21a8f13aa3e3}"
+  
+  # Flex plugin environment
+  TWILIO_FLEX_PLUGIN_ENV = "production"
+  
+  # Required for some Twilio Flex plugins
+  REACT_APP_FLEX_APP_URL = "/"
+  
+[build.args]
+  # Ensure we have enough memory for the build
+  NODE_OPTIONS = "--max-old-space-size=2048"
+
+[build.ignore]
+  # Ignore unnecessary files to speed up builds
+  ignore = [
+    "node_modules",
+    ".git",
+    ".github",
+    ".vscode",
+    "coverage",
+    "dist",
+    "build",
+    "*.log"
+  ]
